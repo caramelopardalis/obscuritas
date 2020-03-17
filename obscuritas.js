@@ -52,7 +52,9 @@ function lighten(color) {
     }
     const hsl = rgb2hsl(rgba[0], rgba[1], rgba[2]);
     if (hsl[2] < 0.5) {
+        // hsl[2] = 1 - (1 - hsl[2]) / 2;
         hsl[2] = 1 - hsl[2];
+        // hsl[2] = 1 - hsl[2];
     } else {
         return 'none';
     }
@@ -65,8 +67,11 @@ function darken(color) {
         return 'none';
     }
     const hsl = rgb2hsl(rgba[0], rgba[1], rgba[2]);
+    hsl[1] = hsl[1] / 2;
     if (hsl[2] > 0.5) {
-        hsl[2] = 1 - hsl[2];
+        // hsl[2] = 1 - hsl[2];
+        hsl[2] -= 0.85;
+        hsl[2] = hsl[2] < 0 ? 0 : hsl[2];
     } else {
         return 'none';
     }
