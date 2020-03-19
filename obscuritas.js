@@ -1,3 +1,103 @@
+document.querySelector('html').style.backgroundColor = '#000';
+
+document.addEventListener('DOMContentLoaded', function () {
+    for (const styleSheet of document.styleSheets) {
+        darkenStyleSheet(styleSheet);
+    }
+});
+
+const obscuritasedStyleSheets = [];
+const observer = new MutationObserver((mutationList, observer) => {
+    for (const mutation of mutationList) {
+        if (mutation.type !== 'childList') {
+            continue;
+        }
+        for (const addedNode of mutation.addedNodes) {
+            if (addedNode.nodeType !== Node.ELEMENT_NODE) {
+                continue;
+            }
+            if (addedNode.tagName === 'LINK' && addedNode.getAttribute('rel') === 'stylesheet') {
+                addedNode.addEventListener('load', function () {
+                    darkenLink(this);
+                });
+            }
+        }
+    }
+});
+observer.observe(document, {
+    childList: true,
+    subtree: true
+});
+
+function loop(array, callback) {
+    let i = 0;
+    tick();
+    function tick() {
+        if (i >= array.length) {
+            return;
+        }
+        callback(array.slice(i, i + 100 > array.length ? array.length : i + 100));
+        i += 100;
+        setTimeout(tick, 0);
+    }
+}
+function darkenLink(link) {
+    for (const styleSheet of document.styleSheets) {
+        if (styleSheet.href === absoluteUrl(link.getAttribute('href'))) {
+            darkenStyleSheet(styleSheet);
+        }
+    }
+}
+function darkenStyleSheet(styleSheet) {
+    if (obscuritasedStyleSheets.includes(styleSheet)) {
+        return;
+    }
+
+    loop(Object.values(styleSheet.cssRules), function (cssRules) {
+        for (const cssRule of cssRules) {
+            if (cssRule.type !== CSSRule.STYLE_RULE) {
+                continue;
+            }
+            for (const name in cssRule.style) {
+                if (['color', '-webkit-text-fill-color', 'caret-color'].includes(name)) {
+                    const color = lighten(cssRule.style[name]);
+                    if (color !== 'none') {
+                        cssRule.style[name] = color;
+                    }
+                } else if (name.indexOf('color') !== -1 || ['background'].includes(name)) {
+                    const color = darken(cssRule.style[name]);
+                    if (color !== 'none') {
+                        cssRule.style[name] = color;
+                    }
+                }
+            }
+        }
+    });
+
+    obscuritasedStyleSheets.push(styleSheet);
+    console.log(styleSheet);
+}
+function baseUrl() {
+    // https://stackoverflow.com/questions/25203124/how-to-get-base-url-with-jquery-or-javascript
+    return window.location.protocol + '//' + window.location.host + '/' + window.location.pathname.split('/')[1];
+}
+function absoluteUrl(path) {
+    // https://stackoverflow.com/questions/14780350/convert-relative-path-to-absolute-using-javascript
+    const stack = baseUrl().split('/');
+    const parts = path.split('/');
+    stack.pop();
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === '.' || parts[i] === '')
+            continue;
+        if (parts[i] === '..')
+            stack.pop();
+        else
+            stack.push(parts[i]);
+    }
+    return stack.join('/');
+}
+
+/*
 let elements = [];
 const n = 10;
 let current = 0;
@@ -44,7 +144,7 @@ function tick() {
     current += n;
     setTimeout(tick, 0);
 }
-
+*/
 function lighten(color) {
     const rgba = getRgba(color);
     if (rgba === undefined || rgba[3] === 0) {
