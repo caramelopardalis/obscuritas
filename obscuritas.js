@@ -4,6 +4,9 @@ document.addEventListener('DOMContentLoaded', function () {
     for (const styleSheet of document.styleSheets) {
         darkenStyleSheet(styleSheet);
     }
+    for (const style of document.querySelectorAll('style')) {
+        darkenStyle(style);
+    }
 });
 
 const obscuritasedStyleSheets = [];
@@ -20,6 +23,8 @@ const observer = new MutationObserver((mutationList, observer) => {
                 addedNode.addEventListener('load', function () {
                     darkenLink(this);
                 });
+            } else if (addedNode.tagName === 'STYLE') {
+                darkenStyle(addedNode);
             }
         }
     }
@@ -29,18 +34,15 @@ observer.observe(document, {
     subtree: true
 });
 
-function loop(array, callback) {
-    let i = 0;
-    tick();
-    function tick() {
-        if (i >= array.length) {
-            return;
-        }
-        callback(array.slice(i, i + 100 > array.length ? array.length : i + 100));
-        i += 100;
-        setTimeout(tick, 0);
+function darkenStyle(style) {
+    if (style.hasAttribute('data-obscuritas')) {
+        return;
     }
+    style.setAttribute('data-obscuritas', true);
+
+    darkenStyleSheet(style.sheet);
 }
+
 function darkenLink(link) {
     for (const styleSheet of document.styleSheets) {
         if (styleSheet.href === absoluteUrl(link.getAttribute('href'))) {
@@ -75,26 +77,6 @@ function darkenStyleSheet(styleSheet) {
     });
 
     obscuritasedStyleSheets.push(styleSheet);
-    console.log(styleSheet);
-}
-function baseUrl() {
-    // https://stackoverflow.com/questions/25203124/how-to-get-base-url-with-jquery-or-javascript
-    return window.location.protocol + '//' + window.location.host + '/' + window.location.pathname.split('/')[1];
-}
-function absoluteUrl(path) {
-    // https://stackoverflow.com/questions/14780350/convert-relative-path-to-absolute-using-javascript
-    const stack = baseUrl().split('/');
-    const parts = path.split('/');
-    stack.pop();
-    for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === '.' || parts[i] === '')
-            continue;
-        if (parts[i] === '..')
-            stack.pop();
-        else
-            stack.push(parts[i]);
-    }
-    return stack.join('/');
 }
 
 /*
@@ -178,6 +160,7 @@ function darken(color) {
     const rgb = hsl2rgb(hsl[0], hsl[1], hsl[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
 }
+
 function hsl2rgb(h, s, l) {
     // https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
     var r, g, b;
@@ -254,5 +237,38 @@ function getRgba(color)
         {
             return +a
         });
+    }
+}
+
+function baseUrl() {
+    // https://stackoverflow.com/questions/25203124/how-to-get-base-url-with-jquery-or-javascript
+    return window.location.protocol + '//' + window.location.host + '/' + window.location.pathname.split('/')[1];
+}
+function absoluteUrl(path) {
+    // https://stackoverflow.com/questions/14780350/convert-relative-path-to-absolute-using-javascript
+    const stack = baseUrl().split('/');
+    const parts = path.split('/');
+    stack.pop();
+    for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === '.' || parts[i] === '')
+            continue;
+        if (parts[i] === '..')
+            stack.pop();
+        else
+            stack.push(parts[i]);
+    }
+    return stack.join('/');
+}
+
+function loop(array, callback) {
+    let i = 0;
+    tick();
+    function tick() {
+        if (i >= array.length) {
+            return;
+        }
+        callback(array.slice(i, i + 100 > array.length ? array.length : i + 100));
+        i += 100;
+        setTimeout(tick, 0);
     }
 }
