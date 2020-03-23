@@ -1,11 +1,19 @@
 document.querySelector('html').style.backgroundColor = '#000';
 
+console.log('Hi! Im obscuritas');
+
 document.addEventListener('DOMContentLoaded', function () {
-    for (const styleSheet of document.styleSheets) {
-        darkenStyleSheet(styleSheet);
-    }
-    for (const style of document.querySelectorAll('style')) {
+    console.log('DOMContentLoaded.', Array.prototype.slice.call(document.querySelectorAll('style')).length, document.styleSheets.length);
+    Array.prototype.slice.call(document.querySelectorAll('style')).forEach(function (style) {
+        console.log('By');
         darkenStyle(style);
+    });
+    for (const styleSheet of document.styleSheets) {
+        console.log('Ho', styleSheet.href);
+        try {
+            darkenStyleSheet(styleSheet);
+        } catch (e) {
+        }
     }
 });
 
@@ -39,8 +47,57 @@ function darkenStyle(style) {
         return;
     }
     style.setAttribute('data-obscuritas', true);
+    const darkenedStyle = document.createElement('style');
+    darkenedStyle.setAttribute('data-obscuritas', true);
 
-    darkenStyleSheet(style.sheet);
+    if (!style.cssRules) {
+        return;
+    }
+
+    loop(Object.values(style.cssRules), function (cssRules) {
+        for (const cssRule of cssRules) {
+            if (cssRule.type !== CSSRule.STYLE_RULE) {
+                continue;
+            }
+            for (const name in cssRule.style) {
+                if (['color', '-webkit-text-fill-color', 'caret-color'].includes(name)) {
+                    const color = lightenCssValue(cssRule.style[name]);
+                    if (color !== cssRule.style[name]) {
+                        darkenedStyle.insertRule(cssRule.selectorText + '{' + color + '}');
+                    }
+                } else if (name.indexOf('color') !== -1 || ['background'].includes(name)) {
+                    const color = darkenCssValue(cssRule.style[name]);
+                    if (color !== cssRule.style[name]) {
+                        darkenedStyle.insertRule(cssRule.selectorText + '{' + color + '}');
+                    }
+                }
+            }
+        }
+    });
+
+    document.querySelector('head').appendChild(darkenedStyle);
+}
+function darkenCssValue(cssValue) {
+    // https://gist.github.com/olmokramer/82ccce673f86db7cda5e
+    return cssValue.replace(/(#(?:[0-9a-f]{2}){2,4}|(#[0-9a-f]{3})|(rgb|hsl)a?\((-?\d+%?[,\s]+){2,3}\s*[\d\.]+%?\)|black|silver|gray|whitesmoke|maroon|red|purple|fuchsia|green|lime|olivedrab|yellow|navy|blue|teal|aquamarine|orange|aliceblue|antiquewhite|aqua|azure|beige|bisque|blanchedalmond|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|gainsboro|ghostwhite|goldenrod|gold|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavenderblush|lavender|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|limegreen|linen|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|oldlace|olive|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|thistle|tomato|turquoise|violet|wheat|white|yellowgreen|rebeccapurple)/ig, function (color) {
+        const darkenedColor = darken(color);
+        if (darkenedColor === 'none') {
+            return color;
+        } else {
+            return darkenedColor;
+        }
+    });
+}
+function lightenCssValue(cssValue) {
+    // https://gist.github.com/olmokramer/82ccce673f86db7cda5e
+    return cssValue.replace(/(#(?:[0-9a-f]{2}){2,4}|(#[0-9a-f]{3})|(rgb|hsl)a?\((-?\d+%?[,\s]+){2,3}\s*[\d\.]+%?\)|black|silver|gray|whitesmoke|maroon|red|purple|fuchsia|green|lime|olivedrab|yellow|navy|blue|teal|aquamarine|orange|aliceblue|antiquewhite|aqua|azure|beige|bisque|blanchedalmond|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|gainsboro|ghostwhite|goldenrod|gold|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavenderblush|lavender|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|limegreen|linen|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|oldlace|olive|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|thistle|tomato|turquoise|violet|wheat|white|yellowgreen|rebeccapurple)/ig, function (color) {
+        const lightenedColor = lighten(color);
+        if (lightenedColor === 'none') {
+            return color;
+        } else {
+            return lightenedColor;
+        }
+    });
 }
 
 function darkenLink(link) {
@@ -52,6 +109,10 @@ function darkenLink(link) {
 }
 function darkenStyleSheet(styleSheet) {
     if (obscuritasedStyleSheets.includes(styleSheet)) {
+        return;
+    }
+
+    if (!styleSheet.cssRules) {
         return;
     }
 
