@@ -1,4 +1,4 @@
-let visibilityState = false;
+let visibilityState = document.visibilityState;
 document.addEventListener('visibilitychange', function() {
     visibilityState = document.visibilityState;
 });
