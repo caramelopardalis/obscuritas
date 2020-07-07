@@ -1,15 +1,15 @@
+let visibilityState = false;
+document.addEventListener('visibilitychange', function() {
+    visibilityState = document.visibilityState;
+});
+
 document.querySelector('html').style.backgroundColor = '#000';
 
-console.log('Hi! Im obscuritas');
-
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOMContentLoaded.', Array.prototype.slice.call(document.querySelectorAll('style')).length, document.styleSheets.length);
     Array.prototype.slice.call(document.querySelectorAll('style')).forEach(function (style) {
-        console.log('By');
         darkenStyle(style);
     });
     for (const styleSheet of document.styleSheets) {
-        console.log('Ho', styleSheet.href);
         try {
             darkenStyleSheet(styleSheet);
         } catch (e) {
@@ -130,6 +130,7 @@ function darkenStyleSheet(styleSheet) {
                 } else if (name.indexOf('color') !== -1 || ['background'].includes(name)) {
                     const color = darken(cssRule.style[name]);
                     if (color !== 'none') {
+                        console.log(cssRule.style[name], color);
                         cssRule.style[name] = color;
                     }
                 }
@@ -140,7 +141,6 @@ function darkenStyleSheet(styleSheet) {
     obscuritasedStyleSheets.push(styleSheet);
 }
 
-/*
 let elements = [];
 const n = 10;
 let current = 0;
@@ -148,7 +148,7 @@ let isRunning = false;
 
 run();
 function run() {
-    if (!isRunning) {
+    if (!isRunning && visibilityState) {
         isRunning = true;
         document.querySelector('html').style.backgroundColor = '#000';
         elements = Array.apply(null, document.querySelectorAll('*'));
@@ -187,7 +187,6 @@ function tick() {
     current += n;
     setTimeout(tick, 0);
 }
-*/
 function lighten(color) {
     const rgba = getRgba(color);
     if (rgba === undefined || rgba[3] === 0) {
