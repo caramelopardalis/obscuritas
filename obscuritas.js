@@ -1,21 +1,4 @@
-let visibilityState = document.visibilityState;
-document.addEventListener('visibilitychange', function() {
-    visibilityState = document.visibilityState;
-});
-
 document.querySelector('html').style.backgroundColor = '#000';
-
-document.addEventListener('DOMContentLoaded', function () {
-    Array.prototype.slice.call(document.querySelectorAll('style')).forEach(function (style) {
-        darkenStyle(style);
-    });
-    for (const styleSheet of document.styleSheets) {
-        try {
-            darkenStyleSheet(styleSheet);
-        } catch (e) {
-        }
-    }
-});
 
 const obscuritasedStyleSheets = [];
 const observer = new MutationObserver((mutationList, observer) => {
@@ -37,9 +20,30 @@ const observer = new MutationObserver((mutationList, observer) => {
         }
     }
 });
-observer.observe(document, {
-    childList: true,
-    subtree: true
+
+let visibilityState = document.visibilityState;
+document.addEventListener('visibilitychange', function() {
+    visibilityState = document.visibilityState;
+    if (visibilityState !== 'visible') {
+        observer.disconnect();
+    } else {
+        observer.observe(document, {
+            childList: true,
+            subtree: true
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    Array.prototype.slice.call(document.querySelectorAll('style')).forEach(function (style) {
+        darkenStyle(style);
+    });
+    for (const styleSheet of document.styleSheets) {
+        try {
+            darkenStyleSheet(styleSheet);
+        } catch (e) {
+        }
+    }
 });
 
 function darkenStyle(style) {
@@ -130,7 +134,6 @@ function darkenStyleSheet(styleSheet) {
                 } else if (name.indexOf('color') !== -1 || ['background'].includes(name)) {
                     const color = darken(cssRule.style[name]);
                     if (color !== 'none') {
-                        console.log(cssRule.style[name], color);
                         cssRule.style[name] = color;
                     }
                 }
@@ -147,7 +150,7 @@ let current = 0;
 let isRunning = false;
 
 run();
-function run() {
+async function run() {
     if (!isRunning && visibilityState) {
         isRunning = true;
         document.querySelector('html').style.backgroundColor = '#000';
@@ -158,9 +161,13 @@ function run() {
             }
         });
         current = 0;
-        setTimeout(tick, 0);
+        await timeout(tick, 0);
     }
-    setTimeout(run, 5000);
+    await timeout(run, 5000);
+}
+async function timeout(fn, ms) {
+    await new Promise(resolve => setTimeout(resolve, ms));
+    return fn();
 }
 
 function tick() {
@@ -274,6 +281,9 @@ function getRgba(color)
             parseInt(color.substr(3, 2), 16),
             parseInt(color.substr(5, 2), 16),
             color.length > 7 ? parseInt(color.substr(7, 2), 16)/255 : 1];
+    }
+    if (!document.body) {
+        return color;
     }
     if (color.indexOf('rgb') === -1)
     {
