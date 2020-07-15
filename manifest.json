@@ -16,5 +16,8 @@
                 "obscuritas.js"
             ]
         }
+    ],
+    "web_accessible_resources": [
+        "script.js"
     ]
 }
