@@ -203,11 +203,23 @@ let isRunning = false;
 let requiredRefresh = false;
 observe(async function () {
     console.log('observed');
-    debounce(function () {
-        requiredRefresh = true;
+    debounce(async function () {
+        if (visibilityState) {
+            isRunning = true;
+            requiredRefresh = false;
+            document.querySelector('html').style.backgroundColor = '#000';
+            elements = Array.apply(null, document.querySelectorAll('*'));
+            Array.apply(null, document.querySelectorAll('iframe')).forEach(iframe => {
+                if (iframe && iframe.contentDocument) {
+                    elements = elements.concat(Array.apply(null, iframe.contentDocument.querySelectorAll('*')));
+                }
+            });
+            current = 0;
+            await timeout(tick, 0);
+        }
     }, 1000)();
 });
-run();
+// run();
 async function run() {
     console.log('run', requiredRefresh, isRunning, visibilityState);
     if (requiredRefresh && !isRunning && visibilityState) {
