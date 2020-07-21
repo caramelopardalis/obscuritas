@@ -200,11 +200,10 @@ let elements = [];
 const n = 10;
 let current = 0;
 let isRunning = false;
-let requiredRefresh = false;
 observe(async function () {
     console.log('observed');
     debounce(async function () {
-        if (visibilityState) {
+        if (visibilityState && !isRunning) {
             isRunning = true;
             requiredRefresh = false;
             document.querySelector('html').style.backgroundColor = '#000';
@@ -216,26 +215,21 @@ observe(async function () {
             });
             current = 0;
             await timeout(tick, 0);
+            isRunning = false;
         }
     }, 1000)();
 });
-// run();
-async function run() {
-    console.log('run', requiredRefresh, isRunning, visibilityState);
-    if (requiredRefresh && !isRunning && visibilityState) {
-        isRunning = true;
-        requiredRefresh = false;
-        document.querySelector('html').style.backgroundColor = '#000';
-        elements = Array.apply(null, document.querySelectorAll('*'));
-        Array.apply(null, document.querySelectorAll('iframe')).forEach(iframe => {
-            if (iframe && iframe.contentDocument) {
-                elements = elements.concat(Array.apply(null, iframe.contentDocument.querySelectorAll('*')));
-            }
-        });
-        current = 0;
-        await timeout(tick, 0);
-    }
-    await timeout(run, 1000);
+
+function debounce(fn, interval) {
+    let timerId;
+    return function () {
+        clearTimeout(timerId);
+        const context = this;
+        const args = arguments;
+        timerId = observe.originalApis.setTimeout.bind(window)(function () {
+            fn.apply(context, args);
+        }, interval);
+    };
 }
 
 async function timeout(fn, ms) {
@@ -268,18 +262,6 @@ async function tick() {
     }
     current += n;
     await timeout(tick, 50);
-}
-
-function debounce(fn, interval) {
-    let timerId;
-    return function () {
-        clearTimeout(timerId);
-        const context = this;
-        const args = arguments;
-        timerId = observe.originalApis.setTimeout.bind(window)(function () {
-            fn.apply(context, args);
-        }, interval);
-    };
 }
 
 function lighten(color) {
