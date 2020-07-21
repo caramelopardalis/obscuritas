@@ -199,24 +199,35 @@ function observe(callback) {
 let elements = [];
 const n = 10;
 let current = 0;
-let isRunning = false;
+let running = false;
+let queued = false;
 observe(async function () {
     console.log('observed');
     debounce(async function () {
-        if (visibilityState && !isRunning) {
-            isRunning = true;
-            requiredRefresh = false;
-            document.querySelector('html').style.backgroundColor = '#000';
-            elements = Array.apply(null, document.querySelectorAll('*'));
-            Array.apply(null, document.querySelectorAll('iframe')).forEach(iframe => {
-                if (iframe && iframe.contentDocument) {
-                    elements = elements.concat(Array.apply(null, iframe.contentDocument.querySelectorAll('*')));
-                }
-            });
-            current = 0;
-            await timeout(tick, 0);
-            isRunning = false;
+        if (!visibilityState || queued) {
+            return;
         }
+
+        if (running) {
+            queued = true;
+            while (running) {
+                await timeout(function () {}, 1000);
+            }
+            queued = false;
+        }
+
+        running = true;
+        requiredRefresh = false;
+        document.querySelector('html').style.backgroundColor = '#000';
+        elements = Array.apply(null, document.querySelectorAll('*'));
+        Array.apply(null, document.querySelectorAll('iframe')).forEach(iframe => {
+            if (iframe && iframe.contentDocument) {
+                elements = elements.concat(Array.apply(null, iframe.contentDocument.querySelectorAll('*')));
+            }
+        });
+        current = 0;
+        await timeout(tick, 0);
+        running = false;
     }, 1000)();
 });
 
