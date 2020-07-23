@@ -1,26 +1,5 @@
 document.querySelector('html').style.backgroundColor = '#000';
 
-const obscuritasedStyleSheets = [];
-const observer = new MutationObserver((mutationList, observer) => {
-    for (const mutation of mutationList) {
-        if (mutation.type !== 'childList') {
-            continue;
-        }
-        for (const addedNode of mutation.addedNodes) {
-            if (addedNode.nodeType !== Node.ELEMENT_NODE) {
-                continue;
-            }
-            if (addedNode.tagName === 'LINK' && addedNode.getAttribute('rel') === 'stylesheet') {
-                addedNode.addEventListener('load', function () {
-                    darkenLink(this);
-                });
-            } else if (addedNode.tagName === 'STYLE') {
-                darkenStyle(addedNode);
-            }
-        }
-    }
-});
-
 let visibilityState = document.visibilityState;
 document.addEventListener('visibilitychange', function() {
     visibilityState = document.visibilityState;
@@ -33,104 +12,6 @@ document.addEventListener('visibilitychange', function() {
         });
     }
 });
-
-async function darkenStyle(style) {
-    if (style.hasAttribute('data-obscuritas')) {
-        return;
-    }
-    style.setAttribute('data-obscuritas', true);
-    const darkenedStyle = document.createElement('style');
-    darkenedStyle.setAttribute('data-obscuritas', true);
-
-    if (!style.cssRules) {
-        return;
-    }
-
-    await loop(Object.values(style.cssRules), function (cssRules) {
-        for (const cssRule of cssRules) {
-            if (cssRule.type !== CSSRule.STYLE_RULE) {
-                continue;
-            }
-            for (const name in cssRule.style) {
-                if (['color', '-webkit-text-fill-color', 'caret-color'].includes(name)) {
-                    const color = lightenCssValue(cssRule.style[name]);
-                    if (color !== cssRule.style[name]) {
-                        darkenedStyle.insertRule(cssRule.selectorText + '{' + color + '}');
-                    }
-                } else if (name.indexOf('color') !== -1 || ['background'].includes(name)) {
-                    const color = darkenCssValue(cssRule.style[name]);
-                    if (color !== cssRule.style[name]) {
-                        darkenedStyle.insertRule(cssRule.selectorText + '{' + color + '}');
-                    }
-                }
-            }
-        }
-    });
-
-    document.querySelector('head').appendChild(darkenedStyle);
-}
-function darkenCssValue(cssValue) {
-    // https://gist.github.com/olmokramer/82ccce673f86db7cda5e
-    return cssValue.replace(/(#(?:[0-9a-f]{2}){2,4}|(#[0-9a-f]{3})|(rgb|hsl)a?\((-?\d+%?[,\s]+){2,3}\s*[\d\.]+%?\)|black|silver|gray|whitesmoke|maroon|red|purple|fuchsia|green|lime|olivedrab|yellow|navy|blue|teal|aquamarine|orange|aliceblue|antiquewhite|aqua|azure|beige|bisque|blanchedalmond|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|gainsboro|ghostwhite|goldenrod|gold|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavenderblush|lavender|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|limegreen|linen|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|oldlace|olive|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|thistle|tomato|turquoise|violet|wheat|white|yellowgreen|rebeccapurple)/ig, function (color) {
-        const darkenedColor = darken(color);
-        if (darkenedColor === 'none') {
-            return color;
-        } else {
-            return darkenedColor;
-        }
-    });
-}
-function lightenCssValue(cssValue) {
-    // https://gist.github.com/olmokramer/82ccce673f86db7cda5e
-    return cssValue.replace(/(#(?:[0-9a-f]{2}){2,4}|(#[0-9a-f]{3})|(rgb|hsl)a?\((-?\d+%?[,\s]+){2,3}\s*[\d\.]+%?\)|black|silver|gray|whitesmoke|maroon|red|purple|fuchsia|green|lime|olivedrab|yellow|navy|blue|teal|aquamarine|orange|aliceblue|antiquewhite|aqua|azure|beige|bisque|blanchedalmond|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|gainsboro|ghostwhite|goldenrod|gold|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavenderblush|lavender|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|limegreen|linen|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|oldlace|olive|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|thistle|tomato|turquoise|violet|wheat|white|yellowgreen|rebeccapurple)/ig, function (color) {
-        const lightenedColor = lighten(color);
-        if (lightenedColor === 'none') {
-            return color;
-        } else {
-            return lightenedColor;
-        }
-    });
-}
-
-function darkenLink(link) {
-    for (const styleSheet of document.styleSheets) {
-        if (styleSheet.href === absoluteUrl(link.getAttribute('href'))) {
-            darkenStyleSheet(styleSheet);
-        }
-    }
-}
-async function darkenStyleSheet(styleSheet) {
-    if (obscuritasedStyleSheets.includes(styleSheet)) {
-        return;
-    }
-
-    if (!styleSheet.cssRules) {
-        return;
-    }
-
-    await loop(Object.values(styleSheet.cssRules), function (cssRules) {
-        for (const cssRule of cssRules) {
-            if (cssRule.type !== CSSRule.STYLE_RULE) {
-                continue;
-            }
-            for (const name in cssRule.style) {
-                if (['color', '-webkit-text-fill-color', 'caret-color'].includes(name)) {
-                    const color = lighten(cssRule.style[name]);
-                    if (color !== 'none') {
-                        cssRule.style[name] = color;
-                    }
-                } else if (name.indexOf('color') !== -1 || ['background'].includes(name)) {
-                    const color = darken(cssRule.style[name]);
-                    if (color !== 'none') {
-                        cssRule.style[name] = color;
-                    }
-                }
-            }
-        }
-    });
-
-    obscuritasedStyleSheets.push(styleSheet);
-}
 
 function observe(callback) {
     observe.originalApis = {
@@ -158,33 +39,31 @@ function observe(callback) {
             callback();
         });
     };
-    /*
     Promise = class Promise extends observe.originalApis.Promise {
         constructor(executor) {
-          super((resolve, reject) => {
-            try {
-              executor(resolve, reject);
-            } catch (e) {
-              reject(e);
-            }
-          });
+            super((resolve, reject) => {
+                try {
+                    executor(resolve, reject);
+                } catch (e) {
+                    reject(e);
+                }
+            });
         }
         then(onResolved, onRejected) {
-          return super.then(val => {
-              const result = onResolved(val);
-              callback();
-              return result;
-          }, onRejected);
+            return super.then(val => {
+                const result = onResolved(val);
+                callback();
+                return result;
+            }, onRejected);
         }
         catch(onRejected) {
-          return super.catch(val => {
-              const result = onRejected(val);
-              callback();
-              return result;
-          });
+            return super.catch(val => {
+                const result = onRejected(val);
+                callback();
+                return result;
+            });
         }
     };
-    */
 
     window.addEventListener('DOMContentLoaded', function () {
         console.log('DOMContentLoaded');
@@ -228,7 +107,7 @@ observe(async function () {
         current = 0;
         await timeout(tick, 0);
         running = false;
-    }, 1000)();
+    }, 5000)();
 });
 
 function debounce(fn, interval) {
