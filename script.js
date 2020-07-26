@@ -3,14 +3,6 @@ document.querySelector('html').style.backgroundColor = '#000';
 let visibilityState = document.visibilityState;
 document.addEventListener('visibilitychange', function() {
     visibilityState = document.visibilityState;
-    if (visibilityState !== 'visible') {
-        observer.disconnect();
-    } else {
-        observer.observe(document, {
-            childList: true,
-            subtree: true
-        });
-    }
 });
 
 function observe(callback) {
@@ -116,13 +108,17 @@ observe(async function () {
 
 function debounce(fn, interval) {
     let timerId;
+    let first = true;
     return function () {
-        clearTimeout(timerId);
+        if (timerId) {
+            clearTimeout(timerId);
+        }
         const context = this;
         const args = arguments;
         timerId = observe.originalApis.setTimeout.bind(window)(function () {
             fn.apply(context, args);
-        }, interval);
+        }, first ? 0 : interval);
+        first = false;
     };
 }
 
