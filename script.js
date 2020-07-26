@@ -16,21 +16,18 @@ function observe(callback) {
     setTimeout = function (fn, ms) {
         return observe.originalApis.setTimeout.bind(window)(function () {
             fn();
-            console.log('setTimeout');
             callback();
         }, ms);
     };
     setInterval = function (fn, ms) {
         return observe.originalApis.setInterval.bind(window)(function () {
             fn();
-            console.log('setInterval');
             callback();
         }, ms);
     };
     requestAnimationFrame = function (fn) {
         return observe.originalApis.requestAnimationFrame.bind(window)(function () {
             fn();
-            console.log('requestAnimationFrame');
             callback();
         });
     };
@@ -47,7 +44,6 @@ function observe(callback) {
         then(onResolved, onRejected) {
             return super.then(val => {
                 const result = onResolved(val);
-                console.log('then');
                 callback();
                 return result;
             }, onRejected);
@@ -55,7 +51,6 @@ function observe(callback) {
         catch(onRejected) {
             return super.catch(val => {
                 const result = onRejected(val);
-                console.log('catch');
                 callback();
                 return result;
             });
@@ -63,20 +58,21 @@ function observe(callback) {
     };
 
     window.addEventListener('DOMContentLoaded', function () {
-        console.log('DOMContentLoaded');
         callback();
     });
     window.addEventListener('load', function () {
-        console.log('load');
         callback();
     });
 }
 
 let elements = [];
-const n = 10;
+const NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE = 500;
 let current = 0;
+
 let running = false;
 let queued = false;
+let queuedMilliseconds;
+const DEBOUNCE_MILLISECONDS = 10000;
 observe(async function () {
     debounce(async function () {
         if (!visibilityState || queued) {
@@ -85,9 +81,11 @@ observe(async function () {
 
         if (running) {
             queued = true;
+            queuedMilliseconds = Date.now();
             while (running) {
                 await timeout(function () {}, 1000);
             }
+            await timeout(function () {}, DEBOUNCE_MILLISECONDS - (Date.now() - queuedMilliseconds));
             queued = false;
         }
 
@@ -103,16 +101,14 @@ observe(async function () {
         current = 0;
         await timeout(tick, 0);
         running = false;
-    }, 5000)();
+    }, DEBOUNCE_MILLISECONDS)();
 });
 
 function debounce(fn, interval) {
     let timerId;
     let first = true;
     return function () {
-        if (timerId) {
-            clearTimeout(timerId);
-        }
+        clearTimeout(timerId);
         const context = this;
         const args = arguments;
         timerId = observe.originalApis.setTimeout.bind(window)(function () {
@@ -134,7 +130,7 @@ async function tick() {
         isRunning = false;
         return;
     }
-    for (let i = current; i < current + n && i < elements.length; i++) {
+    for (let i = current; i < current + NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE && i < elements.length; i++) {
         const styles = window.getComputedStyle(elements[i]);
         for (const name in styles) {
             if (['color', '-webkit-text-fill-color', 'caret-color'].includes(name)) {
@@ -150,8 +146,8 @@ async function tick() {
             }
         }
     }
-    current += n;
-    await timeout(tick, 50);
+    current += NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE;
+    await timeout(tick, 0);
 }
 
 function lighten(color) {
