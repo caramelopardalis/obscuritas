@@ -24,18 +24,21 @@ function observe(callback) {
     setTimeout = function (fn, ms) {
         return observe.originalApis.setTimeout.bind(window)(function () {
             fn();
+            console.log('setTimeout');
             callback();
         }, ms);
     };
     setInterval = function (fn, ms) {
         return observe.originalApis.setInterval.bind(window)(function () {
             fn();
+            console.log('setInterval');
             callback();
         }, ms);
     };
     requestAnimationFrame = function (fn) {
         return observe.originalApis.requestAnimationFrame.bind(window)(function () {
             fn();
+            console.log('requestAnimationFrame');
             callback();
         });
     };
@@ -52,6 +55,7 @@ function observe(callback) {
         then(onResolved, onRejected) {
             return super.then(val => {
                 const result = onResolved(val);
+                console.log('then');
                 callback();
                 return result;
             }, onRejected);
@@ -59,6 +63,7 @@ function observe(callback) {
         catch(onRejected) {
             return super.catch(val => {
                 const result = onRejected(val);
+                console.log('catch');
                 callback();
                 return result;
             });
@@ -81,7 +86,6 @@ let current = 0;
 let running = false;
 let queued = false;
 observe(async function () {
-    console.log('observed');
     debounce(async function () {
         if (!visibilityState || queued) {
             return;
@@ -124,7 +128,7 @@ function debounce(fn, interval) {
 
 async function timeout(fn, ms) {
     console.log('timeout');
-    await new Promise(resolve => observe.originalApis.setTimeout.bind(window)(resolve, ms));
+    await new observe.originalApis.Promise(resolve => observe.originalApis.setTimeout.bind(window)(resolve, ms));
     return await fn();
 }
 
