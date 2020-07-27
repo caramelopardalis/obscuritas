@@ -92,10 +92,10 @@ observe(async function () {
         running = true;
         requiredRefresh = false;
         document.querySelector('html').style.backgroundColor = '#000';
-        elements = Array.apply(null, document.querySelectorAll('*'));
+        elements = Array.apply(null, document.querySelectorAll('*:not([data-obscuritas-colored])'));
         Array.apply(null, document.querySelectorAll('iframe')).forEach(iframe => {
             if (iframe && iframe.contentDocument) {
-                elements = elements.concat(Array.apply(null, iframe.contentDocument.querySelectorAll('*')));
+                elements = elements.concat(Array.apply(null, iframe.contentDocument.querySelectorAll('*:not([data-obscuritas-colored])')));
             }
         });
         current = 0;
@@ -145,6 +145,7 @@ async function tick() {
                 }
             }
         }
+        elements[i].setAttribute('data-obscuritas-colored', true);
     }
     current += NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE;
     await timeout(tick, 0);
