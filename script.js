@@ -1,3 +1,5 @@
+const DEBUG = false;
+
 document.querySelector('html').style.backgroundColor = '#000';
 
 let visibilityState = document.visibilityState;
@@ -119,13 +121,13 @@ function debounce(fn, interval) {
 }
 
 async function timeout(fn, ms) {
-    console.log('timeout');
+    DEBUG ?? console.log('timeout');
     await new observe.originalApis.Promise(resolve => observe.originalApis.setTimeout.bind(window)(resolve, ms));
     return await fn();
 }
 
 async function tick() {
-    console.log('tick', elements.length, current);
+    DEBUG ?? console.log('tick', elements.length, current);
     if (elements.length <= current) {
         isRunning = false;
         return;
