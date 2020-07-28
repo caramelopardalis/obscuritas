@@ -45,7 +45,7 @@ function observe(callback) {
         }
         then(onResolved, onRejected) {
             return super.then(val => {
-                const result = onResolved(val);
+                const result = typeof(onResolved) === 'function' ? onResolved(val) : val;
                 callback();
                 return result;
             }, onRejected);
