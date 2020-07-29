@@ -126,6 +126,23 @@ async function timeout(fn, ms) {
     return await fn();
 }
 
+const FOREGROUND_COLOR_PROPERTIES = [
+    'color',
+    'caret-color',
+    '-webkit-text-fill-color',
+];
+const BACKGROUND_COLOR_PROPERTIES = [
+    'background-color',
+];
+const DEFAULT_VALUES = [
+    'inherit',
+    'initial',
+    'unset',
+    '',
+];
+const IGNORE_DEFAULT_VALUE_PROPERTIES = [
+    '-webkit-text-fill-color',
+];
 async function tick() {
     DEBUG ?? console.log('tick', elements.length, current);
     if (elements.length <= current) {
@@ -133,18 +150,23 @@ async function tick() {
         return;
     }
     for (let i = current; i < current + NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE && i < elements.length; i++) {
-        const styles = window.getComputedStyle(elements[i]);
-        for (const name in styles) {
-            if (['color', '-webkit-text-fill-color', 'caret-color'].includes(name)) {
-                const color = lighten(styles[name]);
-                if (color !== 'none') {
-                    elements[i].style[name] = color + '';
-                }
-            } else if (name.indexOf('color') !== -1) {
-                const color = darken(styles[name]);
-                if (color !== 'none') {
-                    elements[i].style[name] = color + '';
-                }
+        const computedStyles = window.getComputedStyle(elements[i]);
+        for (const propertyName of FOREGROUND_COLOR_PROPERTIES) {
+            if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
+                continue;
+            }
+            const color = lighten(computedStyles[propertyName]);
+            if (color !== 'none') {
+                elements[i].style[propertyName] = color + '';
+            }
+        }
+        for (const propertyName of BACKGROUND_COLOR_PROPERTIES) {
+            if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
+                continue;
+            }
+            const color = darken(computedStyles[propertyName]);
+            if (color !== 'none') {
+                elements[i].style[propertyName] = color + '';
             }
         }
         elements[i].setAttribute('data-obscuritas-colored', true);
@@ -159,13 +181,12 @@ function lighten(color) {
         return 'none';
     }
     const hsl = rgb2hsl(rgba[0], rgba[1], rgba[2]);
-    if (hsl[2] < 0.5) {
-        // hsl[2] = 1 - (1 - hsl[2]) / 2;
-        hsl[2] = 1 - hsl[2];
-        // hsl[2] = 1 - hsl[2];
-    } else {
-        return 'none';
-    }
+    const FACTOR = 1.5;
+    const SATURATION_FACTOR = 10;
+    hsl[2] = (hsl[2] + FACTOR - 1) / (FACTOR - (FACTOR - ((hsl[1] + SATURATION_FACTOR - 1) / SATURATION_FACTOR) * FACTOR));
+    // hsl[2] = 1 - (1 - hsl[2]) / 2;
+    // hsl[2] = 1 - hsl[2];
+    // hsl[2] = 1 - hsl[2];
     const rgb = hsl2rgb(hsl[0], hsl[1], hsl[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
 }
