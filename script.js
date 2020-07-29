@@ -180,14 +180,11 @@ function lighten(color) {
     if (rgba === undefined || rgba[3] === 0) {
         return 'none';
     }
-    const hsl = rgb2hsl(rgba[0], rgba[1], rgba[2]);
-    const FACTOR = 1.5;
-    const SATURATION_FACTOR = 10;
-    hsl[2] = (hsl[2] + FACTOR - 1) / (FACTOR - (FACTOR - ((hsl[1] + SATURATION_FACTOR - 1) / SATURATION_FACTOR) * FACTOR));
-    // hsl[2] = 1 - (1 - hsl[2]) / 2;
-    // hsl[2] = 1 - hsl[2];
-    // hsl[2] = 1 - hsl[2];
-    const rgb = hsl2rgb(hsl[0], hsl[1], hsl[2]);
+    const hsv = rgbToHsv(rgba[0], rgba[1], rgba[2]);
+    console.log(hsv);
+    const FACTOR = 2;
+    hsv[2] = (hsv[2] + FACTOR - 1) / FACTOR;
+    const rgb = hsvToRgb(hsv[0], hsv[1], hsv[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
 }
 function darken(color) {
@@ -195,53 +192,58 @@ function darken(color) {
     if (rgba === undefined || rgba[3] === 0) {
         return 'none';
     }
-    const hsl = rgb2hsl(rgba[0], rgba[1], rgba[2]);
-    hsl[1] = hsl[1] / 2;
-    if (hsl[2] > 0.5) {
-        // hsl[2] = 1 - hsl[2];
-        hsl[2] -= 0.85;
-        hsl[2] = hsl[2] < 0 ? 0 : hsl[2];
+    const hsv = rgbToHsv(rgba[0], rgba[1], rgba[2]);
+    hsv[1] = hsv[1] / 2;
+    if (hsv[2] > 0.5) {
+        hsv[2] -= 0.85;
+        hsv[2] = hsv[2] < 0 ? 0 : hsv[2];
     } else {
         return 'none';
     }
-    const rgb = hsl2rgb(hsl[0], hsl[1], hsl[2]);
+    const rgb = hsvToRgb(hsv[0], hsv[1], hsv[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
 }
 
-function hsl2rgb(h, s, l) {
-    // https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
-    var r, g, b;
+function rgbToHsv(r, g, b) {
+    // https://stackoverflow.com/questions/17242144/javascript-convert-hsb-hsv-color-to-rgb-accurately
+    if (arguments.length === 1) {
+        g = r.g, b = r.b, r = r.r;
+    }
+    var max = Math.max(r, g, b), min = Math.min(r, g, b),
+        d = max - min,
+        h,
+        s = (max === 0 ? 0 : d / max),
+        v = max / 255;
 
-    if(s == 0){
-        r = g = b = l; // achromatic
-    }else{
-        var hue2rgb = function hue2rgb(p, q, t){
-            if(t < 0) t += 1;
-            if(t > 1) t -= 1;
-            if(t < 1/6) return p + (q - p) * 6 * t;
-            if(t < 1/2) return q;
-            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-            return p;
-        }
-
-        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        var p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
+    switch (max) {
+        case min: h = 0; break;
+        case r: h = (g - b) + d * (g < b ? 6: 0); h /= 6 * d; break;
+        case g: h = (b - r) + d * 2; h /= 6 * d; break;
+        case b: h = (r - g) + d * 4; h /= 6 * d; break;
     }
 
-    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    return [h, s, v];
 }
-function rgb2hsl(r,g,b)
-{
-    // https://stackoverflow.com/questions/2348597/why-doesnt-this-javascript-rgb-to-hsl-code-work
-    r = r / 255;
-    g = g / 255;
-    b = b / 255;
-    let a=Math.max(r,g,b), n=a-Math.min(r,g,b), f=(1-Math.abs(a+a-n-1));
-    let h= n && ((a==r) ? (g-b)/n : ((a==g) ? 2+(b-r)/n : 4+(r-g)/n));
-    return [60*(h<0?h+6:h) / 360, f ? n/f : 0, (a+a-n)/2];
+function hsvToRgb(h, s, v) {
+    // https://stackoverflow.com/questions/17242144/javascript-convert-hsb-hsv-color-to-rgb-accurately
+    var r, g, b, i, f, p, q, t;
+    if (arguments.length === 1) {
+        s = h.s, v = h.v, h = h.h;
+    }
+    i = Math.floor(h * 6);
+    f = h * 6 - i;
+    p = v * (1 - s);
+    q = v * (1 - f * s);
+    t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 function getRgba(color)
 {
