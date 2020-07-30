@@ -181,9 +181,8 @@ function lighten(color) {
         return 'none';
     }
     const hsv = rgbToHsv(rgba[0], rgba[1], rgba[2]);
-    console.log(hsv);
-    const FACTOR = 2;
-    hsv[2] = (hsv[2] + FACTOR - 1) / FACTOR;
+    const MORE_DARK_FACTOR = 2;
+    hsv[2] = (hsv[2] + MORE_DARK_FACTOR - 1) / MORE_DARK_FACTOR;
     const rgb = hsvToRgb(hsv[0], hsv[1], hsv[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
 }
@@ -193,17 +192,15 @@ function darken(color) {
         return 'none';
     }
     const hsv = rgbToHsv(rgba[0], rgba[1], rgba[2]);
-    hsv[1] = hsv[1] / 2;
-    if (hsv[2] > 0.5) {
-        hsv[2] -= 0.85;
-        hsv[2] = hsv[2] < 0 ? 0 : hsv[2];
-    } else {
-        return 'none';
-    }
+    const MORE_DARK_FACTOR = 6.2;
+    hsv[2] = hsv[2] / (MORE_DARK_FACTOR / mapRange(Math.pow(hsv[1], 10), 0, 1, 1, MORE_DARK_FACTOR));
     const rgb = hsvToRgb(hsv[0], hsv[1], hsv[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
 }
 
+function mapRange(f, beforeMin, beforeMax, afterMin, afterMax) {
+    return afterMin + (afterMax - afterMin) * ((f - beforeMin) / (beforeMax - beforeMin));
+}
 function rgbToHsv(r, g, b) {
     // https://stackoverflow.com/questions/17242144/javascript-convert-hsb-hsv-color-to-rgb-accurately
     if (arguments.length === 1) {
