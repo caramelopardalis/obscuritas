@@ -132,6 +132,10 @@ const FOREGROUND_COLOR_PROPERTIES = [
     '-webkit-text-fill-color',
 ];
 const BACKGROUND_COLOR_PROPERTIES = [
+    'border-left-color',
+    'border-top-color',
+    'border-right-color',
+    'border-bottom-color',
     'background-color',
 ];
 const DEFAULT_VALUES = [
@@ -151,20 +155,20 @@ async function tick() {
     }
     for (let i = current; i < current + NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE && i < elements.length; i++) {
         const computedStyles = window.getComputedStyle(elements[i]);
+        for (const propertyName of BACKGROUND_COLOR_PROPERTIES) {
+            if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
+                continue;
+            }
+            const color = darken(computedStyles[propertyName], propertyName);
+            if (color !== 'none') {
+                elements[i].style[propertyName] = color + '';
+            }
+        }
         for (const propertyName of FOREGROUND_COLOR_PROPERTIES) {
             if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
                 continue;
             }
             const color = lighten(computedStyles[propertyName]);
-            if (color !== 'none') {
-                elements[i].style[propertyName] = color + '';
-            }
-        }
-        for (const propertyName of BACKGROUND_COLOR_PROPERTIES) {
-            if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
-                continue;
-            }
-            const color = darken(computedStyles[propertyName]);
             if (color !== 'none') {
                 elements[i].style[propertyName] = color + '';
             }
@@ -180,19 +184,23 @@ function lighten(color) {
     if (rgba === undefined || rgba[3] === 0) {
         return 'none';
     }
-    const hsv = rgbToHsv(rgba[0], rgba[1], rgba[2]);
-    const MORE_DARK_FACTOR = 2;
-    hsv[2] = (hsv[2] + MORE_DARK_FACTOR - 1) / MORE_DARK_FACTOR;
-    const rgb = hsvToRgb(hsv[0], hsv[1], hsv[2]);
+    const beforeHsl = rgbToHsl(rgba[0], rgba[1], rgba[2]);
+    const beforeHsv = rgbToHsv(rgba[0], rgba[1], rgba[2]);
+    const MORE_LIGHT_FACTOR = 5;
+    beforeHsl[2] = (beforeHsl[2] + MORE_LIGHT_FACTOR - 1) / MORE_LIGHT_FACTOR;
+    const lightenRgb = hslToRgb(beforeHsl[0], beforeHsl[1], beforeHsl[2]);
+    const afterHsv = rgbToHsv(lightenRgb[0], lightenRgb[1], lightenRgb[2]);
+    afterHsv[1] = (beforeHsv[1] + afterHsv[1]) / 2;
+    const rgb = hsvToRgb(afterHsv[0], afterHsv[1], afterHsv[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
 }
-function darken(color) {
+function darken(color, propertyName) {
     const rgba = getRgba(color);
     if (rgba === undefined || rgba[3] === 0) {
         return 'none';
     }
     const hsv = rgbToHsv(rgba[0], rgba[1], rgba[2]);
-    const MORE_DARK_FACTOR = 6.2;
+    const MORE_DARK_FACTOR = propertyName.indexOf('border') >= 0 ? 3 : 6.2;
     hsv[2] = hsv[2] / (MORE_DARK_FACTOR / mapRange(Math.pow(hsv[1], 10), 0, 1, 1, MORE_DARK_FACTOR));
     const rgb = hsvToRgb(hsv[0], hsv[1], hsv[2]);
     return 'rgba(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ', ' + rgba[3] + ')';
@@ -241,6 +249,41 @@ function hsvToRgb(h, s, v) {
         case 5: r = v, g = p, b = q; break;
     }
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+function hslToRgb(h, s, l) {
+    // https://stackoverflow.com/questions/2353211/hsl-to-rgb-color-conversion
+    var r, g, b;
+
+    if(s == 0){
+        r = g = b = l; // achromatic
+    }else{
+        var hue2rgb = function hue2rgb(p, q, t){
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+function rgbToHsl(r,g,b)
+{
+    // https://stackoverflow.com/questions/2348597/why-doesnt-this-javascript-rgb-to-hsl-code-work
+    r = r / 255;
+    g = g / 255;
+    b = b / 255;
+    let a=Math.max(r,g,b), n=a-Math.min(r,g,b), f=(1-Math.abs(a+a-n-1));
+    let h= n && ((a==r) ? (g-b)/n : ((a==g) ? 2+(b-r)/n : 4+(r-g)/n));
+    return [60*(h<0?h+6:h) / 360, f ? n/f : 0, (a+a-n)/2];
 }
 function getRgba(color)
 {
