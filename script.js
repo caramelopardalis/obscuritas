@@ -136,6 +136,10 @@ const BACKGROUND_COLOR_PROPERTIES = [
     'border-top-color',
     'border-right-color',
     'border-bottom-color',
+    'border-inline-start-color',
+    'border-inline-end-color',
+    'border-block-start-color',
+    'border-block-end-color',
     'background-color',
 ];
 const DEFAULT_VALUES = [
@@ -161,7 +165,7 @@ async function tick() {
             }
             const color = darken(computedStyles[propertyName], propertyName);
             if (color !== 'none') {
-                elements[i].style[propertyName] = color + '';
+                elements[i].style.setProperty(propertyName, color, 'important');
             }
         }
         for (const propertyName of FOREGROUND_COLOR_PROPERTIES) {
@@ -170,7 +174,7 @@ async function tick() {
             }
             const color = lighten(computedStyles[propertyName]);
             if (color !== 'none') {
-                elements[i].style[propertyName] = color + '';
+                elements[i].style.setProperty(propertyName, color, 'important');
             }
         }
         elements[i].setAttribute('data-obscuritas-colored', true);
