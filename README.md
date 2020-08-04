@@ -1,5 +1,6 @@
 # obscuritas
-Firefox addon that replace all light colors to dark colors on every page
+
+Firefox dark mode extension that replace all light colors to dark colors on every page by JS.
 
 [Addon Page](https://addons.mozilla.org/en-US/firefox/addon/obscuritas-dark-theme/)
 
