@@ -4,4 +4,4 @@ Firefox dark mode extension that replace all light colors to dark colors on ever
 
 [Addon Page](https://addons.mozilla.org/en-US/firefox/addon/obscuritas-dark-theme/)
 
-![capture](https://github.com/caramelopardalis/obscuritas/blob/master/obscuritas-capture.gif)
+[![](http://img.youtube.com/vi/4tlHIGw8rBE/0.jpg)](http://www.youtube.com/watch?v=4tlHIGw8rBE "")
