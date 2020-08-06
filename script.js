@@ -68,7 +68,7 @@ function observe(callback) {
 }
 
 let elements = [];
-const NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE = 500;
+const NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE = 10;
 let current = 0;
 
 let running = false;
@@ -94,7 +94,7 @@ observe(async function () {
         running = true;
         requiredRefresh = false;
         document.querySelector('html').style.backgroundColor = '#000';
-        elements = Array.apply(null, document.querySelectorAll('*:not([data-obscuritas-colored])'));
+        elements = Array.apply(null, document.querySelectorAll('*:not([data-obscuritas-colored]):not(style):not(link):not(script)'));
         Array.apply(null, document.querySelectorAll('iframe')).forEach(iframe => {
             if (iframe && iframe.contentDocument) {
                 elements = elements.concat(Array.apply(null, iframe.contentDocument.querySelectorAll('*:not([data-obscuritas-colored])')));
@@ -151,34 +151,82 @@ const DEFAULT_VALUES = [
 const IGNORE_DEFAULT_VALUE_PROPERTIES = [
     '-webkit-text-fill-color',
 ];
+const PSEUDO_ELEMENT_SELECTORS = [
+    '::before',
+    '::after',
+    '::first-line',
+    '::first-letter',
+    '::selection',
+];
+const pseudoElementStyle = document.createElement('style');
+pseudoElementStyle.setAttribute('id', 'obscuritas-pseudo-element-style');
+timeout(async function () {
+    while (true) {
+        if (document.head) {
+            break;
+        }
+        await timeout(function () {}, 100);
+    }
+    document.head.appendChild(pseudoElementStyle);
+}, 0);
 async function tick() {
     DEBUG ?? console.log('tick', elements.length, current);
     if (elements.length <= current) {
         isRunning = false;
         return;
     }
+    let pseudoElementsCss = [];
     for (let i = current; i < current + NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE && i < elements.length; i++) {
-        const computedStyles = window.getComputedStyle(elements[i]);
-        for (const propertyName of BACKGROUND_COLOR_PROPERTIES) {
-            if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
+        let pseudoElementSelectorIndex = -1;
+        do {
+            const computedStyles = pseudoElementSelectorIndex === -1
+                ? window.getComputedStyle(elements[i])
+                : window.getComputedStyle(elements[i], PSEUDO_ELEMENT_SELECTORS[pseudoElementSelectorIndex]);
+            if (pseudoElementSelectorIndex !== -1 && computedStyles.content === 'none') {
                 continue;
             }
-            const color = darken(computedStyles[propertyName], propertyName);
-            if (color !== 'none') {
-                elements[i].style.setProperty(propertyName, color, 'important');
+            for (const propertyName of BACKGROUND_COLOR_PROPERTIES) {
+                if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
+                    continue;
+                }
+                const color = darken(computedStyles[propertyName], propertyName);
+                if (color !== 'none') {
+                    if (pseudoElementSelectorIndex === -1) {
+                        elements[i].style.setProperty(propertyName, color, 'important');
+                    } else {
+                        let id = elements[i].getAttribute('data-obscuritas-id');
+                        if (!id) {
+                            id = Date.now();
+                            elements[i].setAttribute('data-obscuritas-id', id);
+                            elements[i].classList.add('data-obscuritas-id-' + id);
+                        }
+                        pseudoElementsCss.push('.data-obscuritas-id-' + id + PSEUDO_ELEMENT_SELECTORS[pseudoElementSelectorIndex] + ' { ' + propertyName + ': ' + color + '; }');
+                    }
+                }
             }
-        }
-        for (const propertyName of FOREGROUND_COLOR_PROPERTIES) {
-            if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
-                continue;
+            for (const propertyName of FOREGROUND_COLOR_PROPERTIES) {
+                if (IGNORE_DEFAULT_VALUE_PROPERTIES.includes(propertyName) && DEFAULT_VALUES.includes(elements[i].style[propertyName])) {
+                    continue;
+                }
+                const color = lighten(computedStyles[propertyName]);
+                if (color !== 'none') {
+                    if (pseudoElementSelectorIndex === -1) {
+                        elements[i].style.setProperty(propertyName, color, 'important');
+                    } else {
+                        let id = elements[i].getAttribute('data-obscuritas-id');
+                        if (!id) {
+                            id = Date.now();
+                            elements[i].setAttribute('data-obscuritas-id', id);
+                            elements[i].classList.add('data-obscuritas-id-' + id);
+                        }
+                        pseudoElementsCss.push('.data-obscuritas-id-' + id + PSEUDO_ELEMENT_SELECTORS[pseudoElementSelectorIndex] + ' { ' + propertyName + ': ' + color + '; }');
+                    }
+                }
             }
-            const color = lighten(computedStyles[propertyName]);
-            if (color !== 'none') {
-                elements[i].style.setProperty(propertyName, color, 'important');
-            }
-        }
-        elements[i].setAttribute('data-obscuritas-colored', true);
+            elements[i].setAttribute('data-obscuritas-colored', true);
+        } while (++pseudoElementSelectorIndex < PSEUDO_ELEMENT_SELECTORS.length);
     }
+    pseudoElementStyle.textContent = pseudoElementStyle.textContent + pseudoElementsCss.join('');
     current += NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE;
     await timeout(tick, 0);
 }
