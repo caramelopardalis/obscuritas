@@ -68,7 +68,7 @@ function observe(callback) {
 }
 
 let elements = [];
-const NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE = 10;
+const NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE = 100;
 let current = 0;
 
 let running = false;
