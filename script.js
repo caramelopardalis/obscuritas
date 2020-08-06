@@ -175,6 +175,7 @@ async function tick() {
         isRunning = false;
         return;
     }
+    let count = 0;
     let pseudoElementsCss = [];
     for (let i = current; i < current + NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE && i < elements.length; i++) {
         let pseudoElementSelectorIndex = -1;
@@ -182,7 +183,8 @@ async function tick() {
             const computedStyles = pseudoElementSelectorIndex === -1
                 ? window.getComputedStyle(elements[i])
                 : window.getComputedStyle(elements[i], PSEUDO_ELEMENT_SELECTORS[pseudoElementSelectorIndex]);
-            if (pseudoElementSelectorIndex !== -1 && computedStyles.content === 'none') {
+            if (pseudoElementSelectorIndex !== -1 && ['none', 'normal'].includes(computedStyles.content)) {
+                count++;
                 continue;
             }
             for (const propertyName of BACKGROUND_COLOR_PROPERTIES) {
@@ -226,6 +228,7 @@ async function tick() {
             elements[i].setAttribute('data-obscuritas-colored', true);
         } while (++pseudoElementSelectorIndex < PSEUDO_ELEMENT_SELECTORS.length);
     }
+    console.log('count: ', count);
     pseudoElementStyle.textContent = pseudoElementStyle.textContent + pseudoElementsCss.join('');
     current += NUMBER_OF_ELEMENTS_WAS_PROCESSED_AT_ONCE;
     await timeout(tick, 0);
